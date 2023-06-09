@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "154973262829",
+    "project_id": "puattendance2022",
+    "storage_bucket": "puattendance2022.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:154973262829:android:de2b6b17fdeac9c2f7cde4",
+        "android_client_info": {
+          "package_name": "com.example.pu_attendance"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "154973262829-76jegu6o332a0fhsni4n4nfagjkuiii8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCvSQQjEoOz9goLnpQ0_TtAPBsdDSOzv4E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "154973262829-76jegu6o332a0fhsni4n4nfagjkuiii8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
