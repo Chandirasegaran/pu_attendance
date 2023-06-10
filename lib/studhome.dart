@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:pu_attendance/main.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:geolocator/geolocator.dart';
 
 class StudHomePage extends StatefulWidget {
@@ -67,16 +68,12 @@ class _StudHomePageState extends State<StudHomePage> {
             ListTile(
               leading: Icon(Icons.logout),
               title: Text('Logout'),
-              onTap: () {
-                _logout();
-              },
+              onTap: _logout,
             ),
             ListTile(
               leading: Icon(Icons.info),
               title: Text('About'),
-              onTap: () {
-                _showAboutDialog();
-              },
+              onTap: _showAboutDialog,
             ),
           ],
         ),
@@ -119,9 +116,7 @@ class _StudHomePageState extends State<StudHomePage> {
             buildRadioButtonList(),
             SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
-                _markAttendance();
-              },
+              onPressed: _markAttendance,
               child: Text('Mark Attendance'),
             ),
           ],
@@ -150,10 +145,7 @@ class _StudHomePageState extends State<StudHomePage> {
 
   void _logout() async {
     await _auth.signOut();
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => MyHomePage(title: 'M.Sc. Attendance')),
-      (Route<dynamic> route) => false,
-    );
+    Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
   }
 
   void _showAboutDialog() {
@@ -223,11 +215,16 @@ class _StudHomePageState extends State<StudHomePage> {
     if (distanceInMeters <= distanceThreshold) {
       // User is within the classroom radius
       String currentDateTime = '${DateTime.now()}';
-      String name = _auth.currentUser?.displayName ?? 'Student';
+      String email = _auth.currentUser?.email ?? 'Student';
       String attendanceDetails =
-          'Name: $name\nSubject: $selectedSubject\nDate/Time: $currentDateTime';
+          'Name: $email\nSubject: $selectedSubject\nDate/Time: $currentDateTime';
 
-      // TODO: Store attendanceDetails to Firebase in a table-like structure
+      // Store attendance details in Firebase Firestore
+      await FirebaseFirestore.instance.collection('mscattendance').add({
+        'email': _auth.currentUser?.email,
+        'subject': selectedSubject,
+        'dateTime': currentDateTime,
+      });
 
       showDialog(
         context: context,
@@ -275,7 +272,7 @@ class _StudHomePageState extends State<StudHomePage> {
           return AlertDialog(
             title: Text('Attendance Not Marked'),
             content: Text(
-                'You are not in the classroom.\n\nIf you Continuously getting this error.\n1. Check Precise Location Permission is given.\n2. Open Google Maps Once and Come Back here.'),
+                'You are not in the classroom.\n\nIf you are continuously getting this error:\n\n1. Check if precise location permission is given.\n2. Open Google Maps once and come back here.'),
             actions: [
               ElevatedButton(
                 onPressed: () {
@@ -291,65 +288,19 @@ class _StudHomePageState extends State<StudHomePage> {
   }
 
   Future<bool> _checkLocationPermissions() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Error'),
-            content: Text('Location services are disabled.'),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('Close'),
-              ),
-            ],
-          );
-        },
-      );
-      return false;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.deniedForever) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Text('Error'),
-            content: Text(
-                'Location permissions are permanently denied, we cannot request permissions.'),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text('Close'),
-              ),
-            ],
-          );
-        },
-      );
-      return false;
-    }
-
-    if (permission == LocationPermission.denied) {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
       permission = await Geolocator.requestPermission();
-      if (permission != LocationPermission.whileInUse &&
-          permission != LocationPermission.always) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         showDialog(
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Error'),
+              title: Text('Location Permission Required'),
               content: Text(
-                  'Location permissions are denied (actual value: $permission).'),
+                  'This app requires location permission to mark attendance.'),
               actions: [
                 ElevatedButton(
                   onPressed: () {
@@ -364,34 +315,36 @@ class _StudHomePageState extends State<StudHomePage> {
         return false;
       }
     }
-
     return true;
   }
 
   Future<Position> _getUserLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      throw Exception('Location services are disabled.');
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Location Service Disabled'),
+            content:
+                Text('Please enable location services to mark attendance.'),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('Close'),
+              ),
+            ],
+          );
+        },
+      );
+      throw 'Location services are disabled.';
     }
 
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.deniedForever) {
-      throw Exception(
-          'Location permissions are permanently denied, we cannot request permissions.');
-    }
-
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission != LocationPermission.whileInUse &&
-          permission != LocationPermission.always) {
-        throw Exception(
-            'Location permissions are denied (actual value: $permission).');
-      }
-    }
-
-    return await Geolocator.getCurrentPosition();
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.best,
+    );
+    return position;
   }
 }
