@@ -194,6 +194,60 @@ class _CrHomePageState extends State<CrHomePage> {
     }
   }
 
+  // void _createCSVFile() async {
+  //   final fileName =
+  //       '${selectedSubject}_${selectedDateFormat}_${_formatTimeOfDay(startTime)}-${_formatTimeOfDay(endTime)}.csv';
+  //
+  //   final directory = await getExternalStorageDirectory();
+  //   final path = '${directory!.path}/PU Attendance/$fileName';
+  //
+  //   // Retrieve attendance data from Firestore
+  //   final attendanceData = await FirebaseFirestore.instance
+  //       .collection('mscattendance')
+  //       .where('subject', isEqualTo: selectedSubject)
+  //       .where('date', isEqualTo: selectedDateFormat)
+  //       .where('time', isGreaterThanOrEqualTo: _formatTimeOfDay(startTime))
+  //       .where('time', isLessThanOrEqualTo: _formatTimeOfDay(endTime))
+  //       .get();
+  //
+  //   // Convert attendance data to CSV format
+  //   List<List<dynamic>> csvData = [];
+  //   csvData.add(['Email', 'Subject', 'Date', 'Time']); // Header row
+  //
+  //   attendanceData.docs.forEach((doc) {
+  //     final email = doc['email'];
+  //     final subject = doc['subject'];
+  //     final date = doc['date'];
+  //     final time = doc['time'];
+  //     csvData.add([email, subject, date, time]);
+  //   });
+  //
+  //   // Generate CSV file
+  //   String csvString = const ListToCsvConverter().convert(csvData);
+  //   File csvFile = File(path);
+  //   await csvFile.create(recursive: true);
+  //   await csvFile.writeAsString(csvString);
+  //
+  //   // Show a dialog to inform the user about the download
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) {
+  //       return AlertDialog(
+  //         title: Text('Attendance CSV'),
+  //         content: Text(
+  //             'Attendance has been saved as $fileName in PU Attendance directory.'),
+  //         actions: [
+  //           TextButton(
+  //             child: Text('OK'),
+  //             onPressed: () {
+  //               Navigator.of(context).pop();
+  //             },
+  //           ),
+  //         ],
+  //       );
+  //     },
+  //   );
+  // }
   void _createCSVFile() async {
     final fileName =
         '${selectedSubject}_${selectedDateFormat}_${_formatTimeOfDay(startTime)}-${_formatTimeOfDay(endTime)}.csv';
@@ -206,8 +260,8 @@ class _CrHomePageState extends State<CrHomePage> {
         .collection('mscattendance')
         .where('subject', isEqualTo: selectedSubject)
         .where('date', isEqualTo: selectedDateFormat)
-        .where('time', isGreaterThanOrEqualTo: _formatTimeOfDay(startTime))
-        .where('time', isLessThanOrEqualTo: _formatTimeOfDay(endTime))
+        .where('time', isGreaterThanOrEqualTo: _formatTimeOfDay24(startTime))
+        .where('time', isLessThanOrEqualTo: _formatTimeOfDay24(endTime))
         .get();
 
     // Convert attendance data to CSV format
@@ -247,5 +301,11 @@ class _CrHomePageState extends State<CrHomePage> {
         );
       },
     );
+  }
+
+  String _formatTimeOfDay24(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 }
