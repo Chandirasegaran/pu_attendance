@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:geolocator/geolocator.dart';
+// import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 
 class StudHomePage extends StatefulWidget {
   const StudHomePage({Key? key}) : super(key: key);
@@ -24,6 +26,34 @@ class _StudHomePageState extends State<StudHomePage> {
     'Neural Network'
   ];
   String selectedSubject = '';
+  late Timer _locationTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Start the timer for location updates
+    _startLocationUpdates();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    // Cancel the location updates timer when the widget is disposed
+    _locationTimer.cancel();
+  }
+
+  void _startLocationUpdates() {
+    _locationTimer = Timer.periodic(Duration(seconds: 1), (_) {
+      Geolocator.getPositionStream().listen((Position position) {
+        setState(() {
+          // Handle location updates here
+          print(
+              'Latitude: ${position.latitude}, Longitude: ${position.longitude}');
+          // You can perform any logic based on the received location updates
+        });
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,48 +108,51 @@ class _StudHomePageState extends State<StudHomePage> {
           ],
         ),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(height: 0),
-            Center(
-              // Center the email
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.email, color: Colors.deepPurple),
-                  SizedBox(width: 8),
-                  Text(
-                    '${_auth.currentUser?.email ?? 'Email not found'}',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
+      body: SingleChildScrollView(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 25),
+              Center(
+                // Center the email
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.email, color: Colors.deepPurple),
+                    SizedBox(width: 8),
+                    Text(
+                      '${_auth.currentUser?.email ?? 'Email not found'}',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 8),
-            Center(
-              // Center the date
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.date_range, color: Colors.deepPurple),
-                  SizedBox(width: 8),
-                  Text(
-                    '${DateTime.now().toString().split(' ')[0]}',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
+              SizedBox(height: 8),
+              Center(
+                // Center the date
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.date_range, color: Colors.deepPurple),
+                    SizedBox(width: 8),
+                    Text(
+                      '${DateTime.now().toString().split(' ')[0]}',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            SizedBox(height: 16),
-            buildRadioButtonList(),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _markAttendance,
-              child: Text('Mark Attendance'),
-            ),
-          ],
+              SizedBox(height: 16),
+              buildRadioButtonList(),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _markAttendance,
+                child: Text('Mark Attendance'),
+              ),
+              SizedBox(height: 25),
+            ],
+          ),
         ),
       ),
     );
